@@ -1,3 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>共通テスト地理 演習アプリ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // ★ここから下にあった「const QUESTIONS = 」のうしろに、画像2枚目・3枚目に見えている200問のJSONデータをそのまま入れます！
+    const QUESTIONS = [
+      // ここにあなたの200問データ（geo_001 〜 geo_200）が入ります
+    ];
+
+    function App() {
+      const [currentIndex, setCurrentIndex] = React.useState(0);
+      const [selectedOption, setSelectedOption] = React.useState(null);
+      const [isSubmitted, setIsSubmitted] = React.useState(false);
+      const [score, setScore] = React.useState(0);
+      const [openAccordion, setOpenAccordion] = React.useState(null);
+
+      const currentQ = QUESTIONS[currentIndex];
+
+      const handleSelect = (idx) => {
+        if (isSubmitted) return;
+        setSelectedOption(idx);
+      };
+
+      const handleSubmit = () => {
+        if (selectedOption === null) return;
+        setIsSubmitted(true);
+        if (selectedOption === currentQ.correct_index) {
+          setScore(score + 1);
+        }
+      };
+
+      const handleNext = () => {
+        setSelectedOption(null);
+        setIsSubmitted(false);
+        setOpenAccordion(null);
+        setCurrentIndex(currentIndex + 1);
+      };
+
+      const handleRestart = () => {
+        setCurrentIndex(0);
+        setSelectedOption(null);
+        setIsSubmitted(false);
+        setScore(0);
+        setOpenAccordion(null);
+      };
+
+      const toggleAccordion = (key) => {
+        setOpenAccordion(openAccordion === key ? null : key);
+      };
+
+      if (!currentQ || currentIndex >= QUESTIONS.length) {
+        return (
+          <div className="max-w-md mx-auto my-12 p-6 bg-white rounded-2xl shadow-lg text-center border">
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">全問完了！おつかれさまでした！</h1>
+            <p className="text-gray-600 mb-6">スコア: <span className="text-2xl font-bold text-blue-600">{score}</span> / {QUESTIONS.length} 問</p>
+            <button onClick={handleRestart} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow">最初から解く</button>
+          </div>
+        );
+      }
+
+      return (
+        <div className="max-w-lg mx-auto my-6 p-4 sm:p-6 bg-white rounded-2xl shadow-md border">
+          <div className="flex justify-between items-center mb-4 pb-2 border-b">
+            <span className="text-xs bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full font-bold">{currentQ.chapter}</span>
+            <span className="text-sm font-bold text-gray-500">{currentIndex + 1} / {QUESTIONS.length}</span>
+          </div>
+
+          <h2 className="text-base font-bold text-gray-800 mb-4 leading-relaxed">{currentQ.question}</h2>
+
+          <div className="space-y-2.5 mb-6">
+            {currentQ.options.map((opt, idx) => {
+              let style = "border-gray-200 text-gray-700";
+              if (selectedOption === idx) style = "border-blue-500 bg-blue-50 text-blue-900 font-semibold";
+              if (isSubmitted) {
+                if (idx === currentQ.correct_index) style = "border-green-500 bg-green-50 text-green-900 font-bold";
+                else if (selectedOption === idx) style = "border-red-500 bg-red-50 text-red-900";
+                else style = "border-gray-200 opacity-50";
+              }
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleSelect(idx)}
+                  disabled={isSubmitted}
+                  className={`w-full text-left p-3.5 rounded-xl border-2 transition flex items-start space-x-2 text-sm ${style}`}
+                >
+                  <span className="font-bold">{idx + 1}.</span>
+                  <span>{opt}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {!isSubmitted ? (
+            <button
+              onClick={handleSubmit}
+              disabled={selectedOption === null}
+              className={`w-full py-3 rounded-xl font-bold text-white transition ${selectedOption !== null ? 'bg-blue-600 shadow-md' : 'bg-gray-300'}`}
+            >
+              回答を確定する
+            </button>
+          ) : (
+            <div className="space-y-4">
+              <div className={`p-3 rounded-xl font-bold text-center ${selectedOption === currentQ.correct_index ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                {selectedOption === currentQ.correct_index ? '⭕ 正解！' : `❌ 不正解（正解: ${currentQ.correct_index + 1}）`}
+              </div>
+
+              <div className="border rounded-xl divide-y text-xs">
+                <div>
+                  <button onClick={() => toggleAccordion('intuitive')} className="w-full p-3 font-bold bg-gray-50 flex justify-between">
+                    <span>💡 直感ログ</span><span>{openAccordion === 'intuitive' ? '▲' : '▼'}</span>
+                  </button>
+                  {openAccordion === 'intuitive' && <div className="p-3 bg-white">{currentQ.explanation.intuitive_log}</div>}
+                </div>
+                <div>
+                  <button onClick={() => toggleAccordion('logical')} className="w-full p-3 font-bold bg-gray-50 flex justify-between">
+                    <span>📘 論理プロセス</span><span>{openAccordion === 'logical' ? '▲' : '▼'}</span>
+                  </button>
+                  {openAccordion === 'logical' && <div className="p-3 bg-white">{currentQ.explanation.logical_process}</div>}
+                </div>
+                <div>
+                  <button onClick={() => toggleAccordion('wrong')} className="w-full p-3 font-bold bg-gray-50 flex justify-between">
+                    <span>❌ 誤答分析</span><span>{openAccordion === 'wrong' ? '▲' : '▼'}</span>
+                  </button>
+                  {openAccordion === 'wrong' && <div className="p-3 bg-white whitespace-pre-line">{currentQ.explanation.wrong_options_analysis}</div>}
+                </div>
+                <div>
+                  <button onClick={() => toggleAccordion('tips')} className="w-full p-3 font-bold bg-amber-50 text-amber-900 flex justify-between">
+                    <span>⭐ Core Tips</span><span>{openAccordion === 'tips' ? '▲' : '▼'}</span>
+                  </button>
+                  {openAccordion === 'tips' && <div className="p-3 bg-amber-50/50 text-amber-900 whitespace-pre-line">{currentQ.explanation.core_tips}</div>}
+                </div>
+              </div>
+
+              <button onClick={handleNext} className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow">
+                次の問題へ
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
+
 [
   {
     "id": "geo_001",
